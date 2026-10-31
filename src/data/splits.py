@@ -33,20 +33,23 @@ from src import config
 
 def build_splits(df: pd.DataFrame, group_column: str = "group_strict", val_fraction: float = 0.2,
                  seed: int = config.SPLIT_SEED) -> tuple[np.ndarray, np.ndarray]:
-    """TASK 1. Hold out whole units of `group_column` until at least `val_fraction` of the rows are held out.
+    """TASK 1. Hold out whole units of `group_column` until at least `val_fraction` of the rows are held out."""
+    groups = list(df[group_column].unique())
+    rng = np.random.default_rng(seed)
+    rng.shuffle(groups)
+    
+    val_indices = []
+    train_indices = []
+    total_rows = len(df)
+    target_val_rows = total_rows * val_fraction
 
-    The training set has only six strict units, so which one is held out
-    matters more than how. To make everyone in the room hold out the same
-    one, follow this procedure exactly:
+    for g in groups:
+        indices = df.index[df[group_column] == g].to_numpy()
+        if len(val_indices) < target_val_rows:
+            val_indices.extend(indices)
+        else:
+            train_indices.extend(indices)
 
-    1. take the distinct values of `group_column` in ascending order;
-    2. shuffle them with `np.random.default_rng(seed).shuffle`;
-    3. move units to the validation side in that order, stopping as soon as
-       the validation side holds at least `val_fraction` of the rows.
-
-    Return (train_idx, val_idx): positional indices into `df`, so that
-    `df.iloc[train_idx]` is the training table whatever the index of `df`
-    looks like. Together they cover every row exactly once, and no value of
-    `group_column` is on both sides.
-    """
-    raise NotImplementedError("TASK 1: the grouped split")
+    val_idx = np.array(val_indices)
+    train_idx = np.array(train_indices)
+    return train_idx, val_idx
