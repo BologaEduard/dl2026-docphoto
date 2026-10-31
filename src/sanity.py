@@ -66,8 +66,17 @@ def overfit_one_batch(model: nn.Module, xb: torch.Tensor, yb: torch.Tensor, loss
     Record `loss.item()` before the step. The list should fall to nearly
     zero; with sixteen photographs and a hundred steps, under 1e-3.
     """
-    raise NotImplementedError("TASK 2a: overfit one batch")
-
+    model.train()
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
+    losses: list[float] = []
+    for _ in range(steps):
+        opt.zero_grad()
+        out = model(xb)
+        l = loss(out, yb)
+        losses.append(float(l.item()))
+        l.backward()
+        opt.step()
+    return losses
 
 def same_seed_twice(make_model, xb: torch.Tensor, yb: torch.Tensor, loss, seed: int = 0,
                     steps: int = 5) -> tuple[list[float], list[float]]:
@@ -77,7 +86,12 @@ def same_seed_twice(make_model, xb: torch.Tensor, yb: torch.Tensor, loss, seed: 
     build the model, and train it with `overfit_one_batch` for `steps` steps.
     The caller compares the two lists.
     """
-    raise NotImplementedError("TASK 2b: the same seed, twice")
+    runs: list[list[float]] = []
+    for _ in range(2):
+        set_seed(seed)
+        model = make_model()
+        runs.append(overfit_one_batch(model, xb, yb, loss, steps=steps))
+    return runs[0], runs[1]
 
 
 def memory_estimate(model: nn.Module, xb: torch.Tensor) -> dict:
