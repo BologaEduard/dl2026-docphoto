@@ -46,7 +46,19 @@ def augment_safe(x: torch.Tensor, generator: torch.Generator, max_shift: int = 8
       Not `torch.roll`: it would wrap the right edge of the page round to the
       left and invent a sharp edge that is not in the photograph.
     """
-    raise NotImplementedError("TASK 4: flip and shift")
+    n, _, h, w = x.shape
+    mask = (torch.rand(n, generator=generator) < 0.5).to(x.device)
+    shifts = torch.randint(-max_shift, max_shift + 1, (n, 2), generator=generator)
+    out = torch.where(mask.view(-1, 1, 1, 1), x.flip(-1), x.clone())
+    if max_shift <= 0:
+        return out
+    s = max_shift
+    padded = F.pad(out, (s, s, s, s), value=fill)
+    res = torch.empty_like(out)
+    for i in range(n):
+        dy, dx = int(shifts[i, 0]), int(shifts[i, 1])
+        res[i] = padded[i, :, s + dy : s + dy + h, s + dx : s + dx + w]
+    return res
 
 
 def augment_jitter(x: torch.Tensor, generator: torch.Generator, fill: float = 0.0) -> torch.Tensor:
